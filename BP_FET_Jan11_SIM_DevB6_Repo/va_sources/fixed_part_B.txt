@@ -1,0 +1,23 @@
+// fifth rank (Vgs-dependent constant) ----------------------------------
+parameter h=1;
+real Vs,Vd,Vgs,Vds,type;
+real wm10,wm9,wm8,wm7,wm6,wm5,wm4,wm3,wm2,wm1,w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,w10;
+real ue,vthn,uh,vthp,nid,phi,phi0;
+real VT,egVT,NcDOS,NvDOS,sI,tI,svec1,svec2,svec3,svec4;
+real xi_mat11,xi_mat12,xi_mat21,xi_mat22;
+real sa,ta,sb,tb,xi0,xi1,x0,x1,y0,y1,u0,u1,v0,v1,Ie_squ,Ih_squ,Ie1,Ih1;
+
+analog begin   
+
+    Vs=min(V(V2,gnd),V(V3,gnd));
+    Vd=max(V(V2,gnd),V(V3,gnd));
+    Vgs=V(V1,gnd)-Vs;
+    Vds=Vd-Vs;
+    if(V(V2,V3)>0) begin
+        type = 1;
+    end
+    else begin
+        type = -1;
+    end    
+
+    // model parameters evaluation

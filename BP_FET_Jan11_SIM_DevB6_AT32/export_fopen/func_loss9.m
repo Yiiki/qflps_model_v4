@@ -1,0 +1,27 @@
+function y=func_loss9(rows,cols)
+mat_data(:,1)=[
+Inf
+];
+mat_data(:,2)=[
+Inf
+];
+mat_data(:,3)=[
+Inf
+];
+mat_data(:,4)=[
+Inf
+];
+mat_data(:,5)=[
+Inf
+];
+mat_data(:,6)=[
+Inf
+];
+mat_data(:,7)=[
+Inf
+];
+mat_data(:,8)=[
+Inf
+];
+y=mat_data(rows,cols);
+end

@@ -1,0 +1,76 @@
+
+    VT=VT0*nid; 
+    egVT=(vthn+vthp)/VT;
+    NcDOS=NcDOS0*nid;
+    NvDOS=NvDOS0*nid;
+    sI=ue*VT*NcDOS*W2L*elchg;
+    tI=uh*VT*NvDOS*W2L*elchg;
+    svec1 = kbm_mat11*egVT + kbm_mat12*1;
+    svec2 = kbm_mat21*egVT + kbm_mat22*1;
+    svec3 = kbm_mat31*egVT + kbm_mat32*1;
+    svec4 = kbm_mat41*egVT + kbm_mat42*1; 
+
+    //// boundary conditions, denpendent with bias
+    //      |   x=0  |   x=1   |
+    //xi_mat=([0+vthn, Vds+vthn;...          // xi_n
+    //         0-vthp, Vds-vthp]-Vgs)./VT;   // xi_p
+
+    xi_mat11 = (0 + vthn - Vgs)/VT;
+    xi_mat12 = (Vds + vthn- Vgs)/VT;
+    xi_mat21 = (0 - vthp- Vgs)/VT;
+    xi_mat22 = (Vds - vthp- Vgs)/VT;
+    sa = svec1;
+    ta = svec2;
+    sb = svec3;
+    tb = svec4;
+
+    xi0=ap_sol_sft_NIOS(kae,kah,xi_mat11,xi_mat21,sa,ta,sb,tb);
+    xi1=ap_sol_sft_NIOS(kae,kah,xi_mat12,xi_mat22,sa,ta,sb,tb);
+
+    x0=xi0-xi_mat11;
+    x1=xi1-xi_mat12;
+
+    y0=xi_mat21-xi0;
+    y1=xi_mat22-xi1;
+
+    u0=log_exp_plus(x0);
+    u1=log_exp_plus(x1);
+
+    v0=log_exp_plus(y0);
+    v1=log_exp_plus(y1);
+
+    Ie_squ=sI*kae*0.5*(u0-u1)*(u0+u1);
+    Ih_squ=tI*kah*0.5*(v1-v0)*(v0+v1);
+
+    wm10 = -10*h;
+    wm9 = -9*h;
+    wm8 = -8*h;
+    wm7 = -7*h;
+    wm6 = -6*h;
+    wm5 = -5*h;
+    wm4 = -4*h;
+    wm3 = -3*h;
+    wm2 = -2*h;
+    wm1 = -1*h;
+    w0 = 0*h;
+    w1 = 1*h;
+    w2 = 2*h;
+    w3 = 3*h;
+    w4 = 4*h;
+    w5 = 5*h;
+    w6 = 6*h;
+    w7 = 7*h;
+    w8 = 8*h;
+    w9 = 9*h;
+    w10 = 10*h;
+
+    Ie1 = sI*h* (fseh(wm10,x0,x1,kae,egVT)+fseh(wm9,x0,x1,kae,egVT)+fseh(wm8,x0,x1,kae,egVT)+fseh(wm7,x0,x1,kae,egVT)+fseh(wm6,x0,x1,kae,egVT)+fseh(wm5,x0,x1,kae,egVT)+fseh(wm4,x0,x1,kae,egVT)+fseh(wm3,x0,x1,kae,egVT)+fseh(wm2,x0,x1,kae,egVT)+fseh(wm1,x0,x1,kae,egVT)+fseh(w0,x0,x1,kae,egVT)+fseh(w1,x0,x1,kae,egVT)+fseh(w2,x0,x1,kae,egVT)+fseh(w3,x0,x1,kae,egVT)+fseh(w4,x0,x1,kae,egVT)+fseh(w5,x0,x1,kae,egVT)+fseh(w6,x0,x1,kae,egVT)+fseh(w7,x0,x1,kae,egVT)+fseh(w8,x0,x1,kae,egVT)+fseh(w9,x0,x1,kae,egVT)+fseh(w10,x0,x1,kae,egVT));
+    Ih1 = tI*h* (fseh(wm10,y1,y0,kah,egVT)+fseh(wm9,y1,y0,kah,egVT)+fseh(wm8,y1,y0,kah,egVT)+fseh(wm7,y1,y0,kah,egVT)+fseh(wm6,y1,y0,kah,egVT)+fseh(wm5,y1,y0,kah,egVT)+fseh(wm4,y1,y0,kah,egVT)+fseh(wm3,y1,y0,kah,egVT)+fseh(wm2,y1,y0,kah,egVT)+fseh(wm1,y1,y0,kah,egVT)+fseh(w0,y1,y0,kah,egVT)+fseh(w1,y1,y0,kah,egVT)+fseh(w2,y1,y0,kah,egVT)+fseh(w3,y1,y0,kah,egVT)+fseh(w4,y1,y0,kah,egVT)+fseh(w5,y1,y0,kah,egVT)+fseh(w6,y1,y0,kah,egVT)+fseh(w7,y1,y0,kah,egVT)+fseh(w8,y1,y0,kah,egVT)+fseh(w9,y1,y0,kah,egVT)+fseh(w10,y1,y0,kah,egVT));
+
+    // this type guarantee that current goes from d to s (potential high to low)
+    // I(V2,V3) <+ phi;
+    I(V2,V3) <+ type*(Ie_squ+Ih_squ+Ie1+Ih1)/(1+exp((phi-Vds)/phi0));
+
+end
+
+endmodule

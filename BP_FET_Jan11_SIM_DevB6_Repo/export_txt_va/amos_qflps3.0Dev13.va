@@ -1,0 +1,523 @@
+module ambpfet13 (V1,V2,V3,gnd);
+//function out=path_intnp_opt_v3_tnd(lab,optvec,args_pts,sigval,V1,V2,V3)
+//                                                              G, D, S
+// a stand-alone function file
+// Author : Zhao-Yi Yan
+// Date : Nov-11-2022
+// verilog-A version : Jianlan Yan
+//
+// ************** v3.0 Upgrade *************
+// Author : Zhao-Yi Yan
+// Date : Dec-28-2022
+// applicable : Vdd <= 3V
+
+inout V1,V2,V3,gnd;
+electrical V1,V2,V3,gnd;
+
+// functions part 1 ----------------------------------------------------
+
+analog function real log_exp_plus;
+    input x;
+    real x;
+    real bdn;
+    begin
+        bdn = -6;
+        if(x<bdn) begin
+            log_exp_plus = exp(x)-exp(2*x)/2+exp(3*x)/3-exp(4*x)/4;
+            //    exp(5*x)/5-exp(6*x)/6+exp(7*x)/7-exp(8*x)/8;
+        end
+        else begin
+            log_exp_plus = ln(1+exp(x));
+        end
+    end
+endfunction
+
+analog function real F;
+    input a,b,xi_n,xi_p,xi;
+    real a,b,xi_n,xi_p,xi;
+    F = a*log_exp_plus(xi-xi_n) - b*log_exp_plus(xi_p-xi) + xi;
+endfunction
+
+analog function real dFdx;
+    input a,b,xi_n,xi_p,xi;
+    real a,b,xi_n,xi_p,xi;
+    dFdx = a*pow((1+exp(-xi+xi_n)),-1) + b*pow((1+exp(-xi_p+xi)),-1) + 1;
+endfunction
+
+analog function real fq;
+    input x,y,s,t,a;
+    real x,y,s,t,a;
+    fq = pow( ( exp((x - s*log_exp_plus(a*pow((a+1),-1)*y*pow(s,-1)))*pow(t,-1)) + 1 ),-1);
+endfunction
+
+analog function real ap_sol_sft_NIOS;
+    input a,b,xi_n,xi_p,sa,ta,sb,tb;
+    real a,b,xi_n,xi_p,sa,ta,sb,tb;
+    real xi1;
+    begin
+        xi1 = (fq(xi_n,xi_p,sa,ta,b)*a*xi_n+fq(-xi_p,-xi_n,sb,tb,a)*b*xi_p)/(1+fq(xi_n,xi_p,sa,ta,b)*a+fq(-xi_p,-xi_n,sb,tb,a)*b);
+        // One-Shot Newton-Iteration
+        ap_sol_sft_NIOS = xi1 - F(a,b,xi_n,xi_p,xi1)*pow(dFdx(a,b,xi_n,xi_p,xi1),-1);
+    end
+endfunction
+
+//functions part 2 ------------------------------------------------------
+
+analog function real xf;
+    input a,b,z;
+    real a,b,z;
+    xf = 0.5*(b-a)*(z+1) + a;
+endfunction
+
+analog function real zf;
+    input w;
+    real w;
+    zf = (exp(w)-1)*pow((exp(w)+1),-1);
+endfunction
+
+analog function real dzf;
+    input w;
+    real w;
+    dzf = 2*exp(w)*pow((exp(w)+1),-2);
+endfunction
+
+analog function real zfeh;
+    input x,ka,egVT;
+    real x,ka,egVT;
+    zfeh = log_exp_plus(x)*(1 + ka*pow((1+exp(egVT+x)),-1));
+endfunction
+
+analog function real fseh;
+    input w,x0,x1,ka,egVT;
+    real w,x0,x1,ka,egVT;
+    fseh = 0.5*(x0-x1)*zfeh(xf(x1,x0,zf(w)),ka,egVT)*dzf(w);
+endfunction
+
+//functions part 3 ------------------------------------------------------
+
+analog function real AR11;
+    input x;
+    real x,p0,pp1,q0,q1,nu,de;
+    begin
+        // p 
+        p0 = 3.6767877;
+        pp1 = -9.7970465e-02;
+        // q
+        q0=3.2584593e00;
+        q1=1.0e00;
+        // numerator
+        nu=p0+pp1*pow(x,2);
+        // denominator
+        de=q0+q1*pow(x,2);
+        // y
+        AR11=x*nu/de;
+    end
+endfunction
+
+analog function real BR11;
+    input x;
+    real x,p0,p1,q0,q1,nu,de;
+    begin 
+        // p 
+        p0=7.3033e-01;
+        p1=-2.3877e-02;
+        // q
+        q0=6.6211e-01;
+        q1=1.0e00;
+        // numerator
+        nu=p0+p1*pow(x,1);
+        // denominator
+        de=q0+q1*pow(x,1);
+        // y
+        BR11=exp(-pow(x,2))*nu/de;
+    end
+endfunction
+
+analog function real CR11;
+    input x;
+    real x,p0,p1,q0,q1,nu,de;
+    real mypiinv;
+    begin
+        mypiinv=564.189583547756e-003;// pi.^-0.5
+        // p 
+        p0=-1.24368544e-01;
+        p1=-9.68210364e-02;
+        // q
+        q0=4.40917061e-01;
+        q1=1.0e00;
+        // numerator
+        nu=p0+p1*pow(x,-2);
+        // denominator
+        de=q0+q1*pow(x,-2);
+        // y
+        CR11=exp(-pow(x,2))*pow(x,-1)*(mypiinv+pow(x,-2)*nu/de);
+    end
+endfunction
+
+analog function real erf;
+    input x;
+    real x,xa,xb,xan,xbn;
+    begin
+        xa=0.46875;
+        xb=4.0;
+        xan=-xa;
+        xbn=-xb;
+        if(abs(x)<= xa) begin
+        erf=AR11(x);
+        end
+        else if(x>xa && x<xb) begin
+        erf=1-BR11(x);
+        end
+        else if(x>=xb) begin
+        erf=1-CR11(x);
+        end
+        else if(x<xan && x>xbn) begin
+        erf=BR11(-x)-1;
+        end
+        else begin
+        erf=CR11(-x)-1;
+        end
+    end
+endfunction
+
+// modelpt2
+analog function real modelpt2;
+    input A1a,A2a,A3a,A4a,B1,B2,B3,B4,sigmaval,Vgs;
+    real A1,A2,A3,A4,A1a,A2a,A3a,A4a,B1,B2,B3,B4,sigmaval,Vgs;
+    real mypi;
+    real alp1,alp2,alp3;
+    real bet1,bet2,bet3;
+    real uvar1,uvar2,uvar3,uvar4;
+    real Cvar1,Cvar2,Cvar3;
+    real Dvar1,Dvar2,Dvar3;
+
+    begin
+        mypi=3.1415926535;// pi
+        A1=0;
+        A2=A2a-A1a;
+        A3=A3a-A1a;
+        A4=A4a-A1a;
+
+        alp1=(A1-A2)/(B1-B2);
+        alp2=(A2-A3)/(B2-B3);
+        alp3=(A3-A4)/(B3-B4);
+
+        bet1=A1-alp1*(B1-Vgs);
+        bet2=A2-alp2*(B2-Vgs);
+        bet3=A3-alp3*(B3-Vgs);
+
+        uvar1=(B1-Vgs)/(sqrt(2)*sigmaval);
+        uvar2=(B2-Vgs)/(sqrt(2)*sigmaval);
+        uvar3=(B3-Vgs)/(sqrt(2)*sigmaval);
+        uvar4=(B4-Vgs)/(sqrt(2)*sigmaval);
+
+        Cvar1=0.5*bet1*(erf(uvar2)-erf(uvar1));
+        Cvar2=0.5*bet2*(erf(uvar3)-erf(uvar2));
+        Cvar3=0.5*bet3*(erf(uvar4)-erf(uvar3));
+
+        Dvar1=alp1*sigmaval*(exp(-pow(uvar1,2))-exp(-pow(uvar2,2)))/sqrt(2*mypi);
+        Dvar2=alp2*sigmaval*(exp(-pow(uvar2,2))-exp(-pow(uvar3,2)))/sqrt(2*mypi);
+        Dvar3=alp3*sigmaval*(exp(-pow(uvar3,2))-exp(-pow(uvar4,2)))/sqrt(2*mypi);
+
+        modelpt2 = A1a+Cvar1+Cvar2+Cvar3+Dvar1+Dvar2+Dvar3;
+    end
+endfunction
+
+// modelpt3
+analog function real modelpt3;
+    input A1a,A2a,A3a,A4a,A5a,A6a,A7a,B1,B2,B3,B4,B5,B6,B7,sigmaval,Vgs;
+    real A1,A2,A3,A4,A5,A6,A7,A1a,A2a,A3a,A4a,A5a,A6a,A7a,B1,B2,B3,B4,B5,B6,B7,sigmaval,Vgs;
+    real mypi;
+    real alp1,alp2,alp3,alp4,alp5,alp6;
+    real bet1,bet2,bet3,bet4,bet5,bet6;
+    real uvar1,uvar2,uvar3,uvar4,uvar5,uvar6,uvar7;
+    real Cvar1,Cvar2,Cvar3,Cvar4,Cvar5,Cvar6;
+    real Dvar1,Dvar2,Dvar3,Dvar4,Dvar5,Dvar6;
+
+    begin
+        mypi=3.1415926535;
+        A1=0;
+        A2=A2a-A1a;
+        A3=A3a-A1a;
+        A4=A4a-A1a;
+        A5=A5a-A1a;
+        A6=A6a-A1a;
+        A7=A7a-A1a;
+
+        alp1=(A1-A2)/(B1-B2);
+        alp2=(A2-A3)/(B2-B3);
+        alp3=(A3-A4)/(B3-B4);
+        alp4=(A4-A5)/(B4-B5);
+        alp5=(A5-A6)/(B5-B6);
+        alp6=(A6-A7)/(B6-B7);
+
+        bet1=A1-alp1*(B1-Vgs);
+        bet2=A2-alp2*(B2-Vgs);
+        bet3=A3-alp3*(B3-Vgs);
+        bet4=A4-alp4*(B4-Vgs);
+        bet5=A5-alp5*(B5-Vgs);
+        bet6=A6-alp6*(B6-Vgs);
+
+        uvar1=(B1-Vgs)/(sqrt(2)*sigmaval);
+        uvar2=(B2-Vgs)/(sqrt(2)*sigmaval);
+        uvar3=(B3-Vgs)/(sqrt(2)*sigmaval);
+        uvar4=(B4-Vgs)/(sqrt(2)*sigmaval);
+        uvar5=(B5-Vgs)/(sqrt(2)*sigmaval);
+        uvar6=(B6-Vgs)/(sqrt(2)*sigmaval);
+        uvar7=(B7-Vgs)/(sqrt(2)*sigmaval);
+
+        Cvar1=0.5*bet1*(erf(uvar2)-erf(uvar1));
+        Cvar2=0.5*bet2*(erf(uvar3)-erf(uvar2));
+        Cvar3=0.5*bet3*(erf(uvar4)-erf(uvar3));
+        Cvar4=0.5*bet4*(erf(uvar5)-erf(uvar4));
+        Cvar5=0.5*bet5*(erf(uvar6)-erf(uvar5));
+        Cvar6=0.5*bet6*(erf(uvar7)-erf(uvar6));
+
+        Dvar1=alp1*sigmaval*(exp(-pow(uvar1,2))-exp(-pow(uvar2,2)))/sqrt(2*mypi);
+        Dvar2=alp2*sigmaval*(exp(-pow(uvar2,2))-exp(-pow(uvar3,2)))/sqrt(2*mypi);
+        Dvar3=alp3*sigmaval*(exp(-pow(uvar3,2))-exp(-pow(uvar4,2)))/sqrt(2*mypi);
+        Dvar4=alp4*sigmaval*(exp(-pow(uvar4,2))-exp(-pow(uvar5,2)))/sqrt(2*mypi);
+        Dvar5=alp5*sigmaval*(exp(-pow(uvar5,2))-exp(-pow(uvar6,2)))/sqrt(2*mypi);
+        Dvar6=alp6*sigmaval*(exp(-pow(uvar6,2))-exp(-pow(uvar7,2)))/sqrt(2*mypi);
+
+        modelpt3 = A1a+Cvar1+Cvar2+Cvar3+Cvar4+Cvar5+Cvar6+Dvar1+Dvar2+Dvar3+Dvar4+Dvar5+Dvar6;
+    end
+endfunction
+
+//these parameters could be directly passed in hspice script/testbench
+
+// device specified parameters
+
+// first rank ----PHYSICAL----CONSTANTS----NORMALLY------UNCHANGED-------
+parameter VT0 = 0.0259;// kT/q [V] at 300 K
+parameter elchg=1.6022e-19;// elementary charge [C]
+
+// second rank ---PHYSICAL----CONSTANT-----MATERIAL------SPECIFIED-------
+parameter NcDOS0=1.6199e+16;// [m^-2] NcDOS at 300 K
+parameter NvDOS0=1.5119e+16;// [m^-2] NcDOS at 300 K
+parameter kae=24.9195;// Cq,e/Cox
+parameter kah=23.2582;// Cq,h/Cox
+//kbm_mat =[...// si,ti = kb1*egVT + kb2
+//    kb1        kb2
+//    0.4659    5.6248    // s1
+//    0.1477    1.6150    // t1
+//    0.4541    6.3953    // s2
+//    0.1530    1.7150];  // t2
+parameter kbm_mat11 = 0.4659;
+parameter kbm_mat12 = 5.6248;
+parameter kbm_mat21 = 0.1477;
+parameter kbm_mat22 = 1.6150;
+parameter kbm_mat31 = 0.4541;
+parameter kbm_mat32 = 6.3953;
+parameter kbm_mat41 = 0.1530;
+parameter kbm_mat42 = 1.7150;
+
+// third rank ----DEVICE-----DESIGN------PARAMETERS----[MEASURABLE]------
+
+parameter real W = 1u from (0.1u : 10m);  //this boundary could be changed
+parameter real L = 1u from (0.1u : 10m);
+parameter W2L=0.89*W/L;//W/L
+// fourth rank ----DEVICE-----DESIGN------PARAMETERS---[MODEL-DEPENDENT]-
+parameter sigmaval = 9.984135e-01;// sigmaval
+// ue parameter Dev#1-3
+
+parameter Aue1 = 2.295644e-03;
+parameter Aue2 = 1.501588e-03;
+parameter Aue3 = 7.075315e-04;
+parameter Aue4 = -8.652476e-05;
+
+parameter Bue1 = -9.000000e+00;
+parameter Bue2 = -3.000000e+00;
+parameter Bue3 = 3.000000e+00;
+parameter Bue4 = 9.000000e+00;
+
+// vthn parameter Dev#1-3
+
+parameter Avthn1 = 8.711454e+00;
+parameter Avthn2 = 5.079135e+00;
+parameter Avthn3 = 1.446816e+00;
+parameter Avthn4 = -2.185503e+00;
+
+parameter Bvthn1 = -9.000000e+00;
+parameter Bvthn2 = -3.000000e+00;
+parameter Bvthn3 = 3.000000e+00;
+parameter Bvthn4 = 9.000000e+00;
+
+// uh parameter Dev#1-3
+
+parameter Auh1 = -8.299795e-03;
+parameter Auh2 = 2.008497e-02;
+parameter Auh3 = 4.846974e-02;
+parameter Auh4 = 7.685450e-02;
+
+parameter Buh1 = -9.000000e+00;
+parameter Buh2 = -3.000000e+00;
+parameter Buh3 = 3.000000e+00;
+parameter Buh4 = 9.000000e+00;
+
+// vthp parameter Dev#1-3
+
+parameter Avthp1 = 4.474270e+00;
+parameter Avthp2 = 4.663563e+00;
+parameter Avthp3 = 4.852855e+00;
+parameter Avthp4 = 5.042148e+00;
+
+parameter Bvthp1 = -9.000000e+00;
+parameter Bvthp2 = -3.000000e+00;
+parameter Bvthp3 = 3.000000e+00;
+parameter Bvthp4 = 9.000000e+00;
+
+// nid parameter Dev#1-3
+
+parameter Anid1 = 1.084103e+01;
+parameter Anid2 = 9.490852e+00;
+parameter Anid3 = 1.223229e+01;
+parameter Anid4 = 1.497373e+01;
+parameter Anid5 = 1.362355e+01;
+parameter Anid6 = 1.227337e+01;
+parameter Anid7 = 1.501481e+01;
+
+parameter Bnid1 = -9.000000e+00;
+parameter Bnid2 = -6.000000e+00;
+parameter Bnid3 = -3.000000e+00;
+parameter Bnid4 = 0.000000e+00;
+parameter Bnid5 = 3.000000e+00;
+parameter Bnid6 = 6.000000e+00;
+parameter Bnid7 = 9.000000e+00;
+
+// phi parameter Dev#1-3
+
+parameter Aphi1 = -3.973071e+01;
+parameter Aphi2 = -4.010393e+01;
+parameter Aphi3 = -1.905488e+01;
+parameter Aphi4 = 1.994175e+00;
+parameter Aphi5 = 1.620951e+00;
+parameter Aphi6 = 1.247727e+00;
+parameter Aphi7 = 2.229678e+01;
+
+parameter Bphi1 = -9.000000e+00;
+parameter Bphi2 = -6.000000e+00;
+parameter Bphi3 = -3.000000e+00;
+parameter Bphi4 = 0.000000e+00;
+parameter Bphi5 = 3.000000e+00;
+parameter Bphi6 = 6.000000e+00;
+parameter Bphi7 = 9.000000e+00;
+
+// phi0 parameter Dev#1-3
+
+parameter Aphi01 = -6.394055e-01;
+parameter Aphi02 = 1.107779e-03;
+parameter Aphi03 = 6.416210e-01;
+parameter Aphi04 = 1.282134e+00;
+
+parameter Bphi01 = -9.000000e+00;
+parameter Bphi02 = -3.000000e+00;
+parameter Bphi03 = 3.000000e+00;
+parameter Bphi04 = 9.000000e+00;
+
+// fifth rank (Vgs-dependent constant) ----------------------------------
+parameter h=1;
+real Vs,Vd,Vgs,Vds,type;
+real wm10,wm9,wm8,wm7,wm6,wm5,wm4,wm3,wm2,wm1,w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,w10;
+real ue,vthn,uh,vthp,nid,phi,phi0;
+real VT,egVT,NcDOS,NvDOS,sI,tI,svec1,svec2,svec3,svec4;
+real xi_mat11,xi_mat12,xi_mat21,xi_mat22;
+real sa,ta,sb,tb,xi0,xi1,x0,x1,y0,y1,u0,u1,v0,v1,Ie_squ,Ih_squ,Ie1,Ih1;
+
+analog begin   
+
+    Vs=min(V(V2,gnd),V(V3,gnd));
+    Vd=max(V(V2,gnd),V(V3,gnd));
+    Vgs=V(V1,gnd)-Vs;
+    Vds=Vd-Vs;
+    if(V(V2,V3)>0) begin
+        type = 1;
+    end
+    else begin
+        type = -1;
+    end    
+
+    // model parameters evaluation
+	ue=modelpt2(Aue1,Aue2,Aue3,Aue4,Bue1,Bue2,Bue3,Bue4,sigmaval,Vgs);
+	vthn=modelpt2(Avthn1,Avthn2,Avthn3,Avthn4,Bvthn1,Bvthn2,Bvthn3,Bvthn4,sigmaval,Vgs);
+	uh=modelpt2(Auh1,Auh2,Auh3,Auh4,Buh1,Buh2,Buh3,Buh4,sigmaval,Vgs);
+	vthp=modelpt2(Avthp1,Avthp2,Avthp3,Avthp4,Bvthp1,Bvthp2,Bvthp3,Bvthp4,sigmaval,Vgs);
+	nid=modelpt3(Anid1,Anid2,Anid3,Anid4,Anid5,Anid6,Anid7,Bnid1,Bnid2,Bnid3,Bnid4,Bnid5,Bnid6,Bnid7,sigmaval,Vgs);
+	phi=modelpt3(Aphi1,Aphi2,Aphi3,Aphi4,Aphi5,Aphi6,Aphi7,Bphi1,Bphi2,Bphi3,Bphi4,Bphi5,Bphi6,Bphi7,sigmaval,Vgs);
+	phi0=modelpt2(Aphi01,Aphi02,Aphi03,Aphi04,Bphi01,Bphi02,Bphi03,Bphi04,sigmaval,Vgs);
+
+    VT=VT0*nid; 
+    egVT=(vthn+vthp)/VT;
+    NcDOS=NcDOS0*nid;
+    NvDOS=NvDOS0*nid;
+    sI=ue*VT*NcDOS*W2L*elchg;
+    tI=uh*VT*NvDOS*W2L*elchg;
+    svec1 = kbm_mat11*egVT + kbm_mat12*1;
+    svec2 = kbm_mat21*egVT + kbm_mat22*1;
+    svec3 = kbm_mat31*egVT + kbm_mat32*1;
+    svec4 = kbm_mat41*egVT + kbm_mat42*1; 
+
+    //// boundary conditions, denpendent with bias
+    //      |   x=0  |   x=1   |
+    //xi_mat=([0+vthn, Vds+vthn;...          // xi_n
+    //         0-vthp, Vds-vthp]-Vgs)./VT;   // xi_p
+
+    xi_mat11 = (0 + vthn - Vgs)/VT;
+    xi_mat12 = (Vds + vthn- Vgs)/VT;
+    xi_mat21 = (0 - vthp- Vgs)/VT;
+    xi_mat22 = (Vds - vthp- Vgs)/VT;
+    sa = svec1;
+    ta = svec2;
+    sb = svec3;
+    tb = svec4;
+
+    xi0=ap_sol_sft_NIOS(kae,kah,xi_mat11,xi_mat21,sa,ta,sb,tb);
+    xi1=ap_sol_sft_NIOS(kae,kah,xi_mat12,xi_mat22,sa,ta,sb,tb);
+
+    x0=xi0-xi_mat11;
+    x1=xi1-xi_mat12;
+
+    y0=xi_mat21-xi0;
+    y1=xi_mat22-xi1;
+
+    u0=log_exp_plus(x0);
+    u1=log_exp_plus(x1);
+
+    v0=log_exp_plus(y0);
+    v1=log_exp_plus(y1);
+
+    Ie_squ=sI*kae*0.5*(u0-u1)*(u0+u1);
+    Ih_squ=tI*kah*0.5*(v1-v0)*(v0+v1);
+
+    wm10 = -10*h;
+    wm9 = -9*h;
+    wm8 = -8*h;
+    wm7 = -7*h;
+    wm6 = -6*h;
+    wm5 = -5*h;
+    wm4 = -4*h;
+    wm3 = -3*h;
+    wm2 = -2*h;
+    wm1 = -1*h;
+    w0 = 0*h;
+    w1 = 1*h;
+    w2 = 2*h;
+    w3 = 3*h;
+    w4 = 4*h;
+    w5 = 5*h;
+    w6 = 6*h;
+    w7 = 7*h;
+    w8 = 8*h;
+    w9 = 9*h;
+    w10 = 10*h;
+
+    Ie1 = sI*h* (fseh(wm10,x0,x1,kae,egVT)+fseh(wm9,x0,x1,kae,egVT)+fseh(wm8,x0,x1,kae,egVT)+fseh(wm7,x0,x1,kae,egVT)+fseh(wm6,x0,x1,kae,egVT)+fseh(wm5,x0,x1,kae,egVT)+fseh(wm4,x0,x1,kae,egVT)+fseh(wm3,x0,x1,kae,egVT)+fseh(wm2,x0,x1,kae,egVT)+fseh(wm1,x0,x1,kae,egVT)+fseh(w0,x0,x1,kae,egVT)+fseh(w1,x0,x1,kae,egVT)+fseh(w2,x0,x1,kae,egVT)+fseh(w3,x0,x1,kae,egVT)+fseh(w4,x0,x1,kae,egVT)+fseh(w5,x0,x1,kae,egVT)+fseh(w6,x0,x1,kae,egVT)+fseh(w7,x0,x1,kae,egVT)+fseh(w8,x0,x1,kae,egVT)+fseh(w9,x0,x1,kae,egVT)+fseh(w10,x0,x1,kae,egVT));
+    Ih1 = tI*h* (fseh(wm10,y1,y0,kah,egVT)+fseh(wm9,y1,y0,kah,egVT)+fseh(wm8,y1,y0,kah,egVT)+fseh(wm7,y1,y0,kah,egVT)+fseh(wm6,y1,y0,kah,egVT)+fseh(wm5,y1,y0,kah,egVT)+fseh(wm4,y1,y0,kah,egVT)+fseh(wm3,y1,y0,kah,egVT)+fseh(wm2,y1,y0,kah,egVT)+fseh(wm1,y1,y0,kah,egVT)+fseh(w0,y1,y0,kah,egVT)+fseh(w1,y1,y0,kah,egVT)+fseh(w2,y1,y0,kah,egVT)+fseh(w3,y1,y0,kah,egVT)+fseh(w4,y1,y0,kah,egVT)+fseh(w5,y1,y0,kah,egVT)+fseh(w6,y1,y0,kah,egVT)+fseh(w7,y1,y0,kah,egVT)+fseh(w8,y1,y0,kah,egVT)+fseh(w9,y1,y0,kah,egVT)+fseh(w10,y1,y0,kah,egVT));
+
+    // this type guarantee that current goes from d to s (potential high to low)
+    // I(V2,V3) <+ phi;
+    I(V2,V3) <+ type*(Ie_squ+Ih_squ+Ie1+Ih1)/(1+exp((phi-Vds)/phi0));
+
+end
+
+endmodule

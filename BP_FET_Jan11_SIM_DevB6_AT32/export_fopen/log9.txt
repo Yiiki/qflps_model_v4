@@ -1,0 +1,17 @@
+say hellow
+i=9/50, j=1/8
+loss=Inf
+i=9/50, j=2/8
+loss=Inf
+i=9/50, j=3/8
+loss=Inf
+i=9/50, j=4/8
+loss=Inf
+i=9/50, j=5/8
+loss=Inf
+i=9/50, j=6/8
+loss=Inf
+i=9/50, j=7/8
+loss=Inf
+i=9/50, j=8/8
+loss=Inf

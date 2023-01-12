@@ -1,0 +1,7 @@
+	ue=modelpt2(Aue1,Aue2,Aue3,Aue4,Bue1,Bue2,Bue3,Bue4,sigmaval,Vgs);
+	vthn=modelpt2(Avthn1,Avthn2,Avthn3,Avthn4,Bvthn1,Bvthn2,Bvthn3,Bvthn4,sigmaval,Vgs);
+	uh=modelpt2(Auh1,Auh2,Auh3,Auh4,Buh1,Buh2,Buh3,Buh4,sigmaval,Vgs);
+	vthp=modelpt2(Avthp1,Avthp2,Avthp3,Avthp4,Bvthp1,Bvthp2,Bvthp3,Bvthp4,sigmaval,Vgs);
+	nid=modelpt3(Anid1,Anid2,Anid3,Anid4,Anid5,Anid6,Anid7,Bnid1,Bnid2,Bnid3,Bnid4,Bnid5,Bnid6,Bnid7,sigmaval,Vgs);
+	phi=modelpt3(Aphi1,Aphi2,Aphi3,Aphi4,Aphi5,Aphi6,Aphi7,Bphi1,Bphi2,Bphi3,Bphi4,Bphi5,Bphi6,Bphi7,sigmaval,Vgs);
+	phi0=modelpt3(Aphi01,Aphi02,Aphi03,Aphi04,Aphi05,Aphi06,Aphi07,Bphi01,Bphi02,Bphi03,Bphi04,Bphi05,Bphi06,Bphi07,sigmaval,Vgs);

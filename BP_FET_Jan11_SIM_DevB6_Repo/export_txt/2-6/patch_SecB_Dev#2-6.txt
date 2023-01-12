@@ -1,0 +1,99 @@
+parameter W2L=0.53*W/L;//W/L
+// fourth rank ----DEVICE-----DESIGN------PARAMETERS---[MODEL-DEPENDENT]-
+parameter sigmaval = 2.435796e-01;// sigmaval
+// ue parameter Dev#2-6
+
+parameter Aue1 = 1.121332e-02;
+parameter Aue2 = 6.177149e-03;
+parameter Aue3 = 1.140978e-03;
+parameter Aue4 = -3.895193e-03;
+
+parameter Bue1 = -9.000000e+00;
+parameter Bue2 = -3.000000e+00;
+parameter Bue3 = 3.000000e+00;
+parameter Bue4 = 9.000000e+00;
+
+// vthn parameter Dev#2-6
+
+parameter Avthn1 = 9.398959e+00;
+parameter Avthn2 = 6.102470e+00;
+parameter Avthn3 = 2.805982e+00;
+parameter Avthn4 = -4.905060e-01;
+
+parameter Bvthn1 = -9.000000e+00;
+parameter Bvthn2 = -3.000000e+00;
+parameter Bvthn3 = 3.000000e+00;
+parameter Bvthn4 = 9.000000e+00;
+
+// uh parameter Dev#2-6
+
+parameter Auh1 = -3.428598e-02;
+parameter Auh2 = 1.285425e-02;
+parameter Auh3 = 5.999448e-02;
+parameter Auh4 = 1.071347e-01;
+
+parameter Buh1 = -9.000000e+00;
+parameter Buh2 = -3.000000e+00;
+parameter Buh3 = 3.000000e+00;
+parameter Buh4 = 9.000000e+00;
+
+// vthp parameter Dev#2-6
+
+parameter Avthp1 = 5.368802e-01;
+parameter Avthp2 = 3.443632e+00;
+parameter Avthp3 = 6.350385e+00;
+parameter Avthp4 = 9.257137e+00;
+
+parameter Bvthp1 = -9.000000e+00;
+parameter Bvthp2 = -3.000000e+00;
+parameter Bvthp3 = 3.000000e+00;
+parameter Bvthp4 = 9.000000e+00;
+
+// nid parameter Dev#2-6
+
+parameter Anid1 = -2.057636e+00;
+parameter Anid2 = -5.899504e-01;
+parameter Anid3 = 8.248692e+00;
+parameter Anid4 = 1.708734e+01;
+parameter Anid5 = 1.855502e+01;
+parameter Anid6 = 2.002271e+01;
+parameter Anid7 = 2.886135e+01;
+
+parameter Bnid1 = -9.000000e+00;
+parameter Bnid2 = -6.000000e+00;
+parameter Bnid3 = -3.000000e+00;
+parameter Bnid4 = 0.000000e+00;
+parameter Bnid5 = 3.000000e+00;
+parameter Bnid6 = 6.000000e+00;
+parameter Bnid7 = 9.000000e+00;
+
+// phi parameter Dev#2-6
+
+parameter Aphi1 = 1.415038e+00;
+parameter Aphi2 = 9.716800e-01;
+parameter Aphi3 = 5.283223e-01;
+parameter Aphi4 = 8.496452e-02;
+
+parameter Bphi1 = -9.000000e+00;
+parameter Bphi2 = -3.000000e+00;
+parameter Bphi3 = 3.000000e+00;
+parameter Bphi4 = 9.000000e+00;
+
+// phi0 parameter Dev#2-6
+
+parameter Aphi01 = 3.519689e-01;
+parameter Aphi02 = -8.536213e-01;
+parameter Aphi03 = 4.733652e-01;
+parameter Aphi04 = 1.800352e+00;
+parameter Aphi05 = 5.947615e-01;
+parameter Aphi06 = -6.108287e-01;
+parameter Aphi07 = 7.161578e-01;
+
+parameter Bphi01 = -9.000000e+00;
+parameter Bphi02 = -6.000000e+00;
+parameter Bphi03 = -3.000000e+00;
+parameter Bphi04 = 0.000000e+00;
+parameter Bphi05 = 3.000000e+00;
+parameter Bphi06 = 6.000000e+00;
+parameter Bphi07 = 9.000000e+00;
+
